@@ -3,62 +3,123 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <!-- PWA meta-tags для iOS -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>English AI Coach</title>
   <style>
-    /* Базові стилі, щоб додаток виглядав акуратно */
-    body { font-family: -apple-system, sans-serif; background: #f4f4f9; margin: 0; display: flex; flex-direction: column; height: 100vh; }
-    .screen { padding: 20px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
-    #chat-screen { display: none; }
-    h1 { text-align: center; color: #333; }
+    /* Оновлені стилі для додатка з меню */
+    body { font-family: -apple-system, sans-serif; background: #f4f4f9; margin: 0; display: flex; flex-direction: column; height: 100vh; color: #333;}
+    .screen { padding: 20px; display: none; flex-direction: column; height: 100%; box-sizing: border-box; padding-bottom: 70px; /* Місце для меню */ }
+    #login-screen { display: flex; padding-bottom: 20px;}
+    
+    h1, h2 { text-align: center; }
     input, button { padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; outline: none; }
-    button { background: #1c1c1e; color: white; border: none; cursor: pointer; font-weight: bold; }
-    button:active { background: #3a3a3c; }
+    button.primary { background: #1c1c1e; color: white; border: none; cursor: pointer; font-weight: bold; width: 100%;}
+    button.primary:active { background: #3a3a3c; }
     
-    /* Стилі чату */
-    #chat-box { flex: 1; overflow-y: auto; background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; border: 1px solid #e5e5ea; display: flex; flex-direction: column; gap: 10px;}
-    .message { padding: 12px; border-radius: 16px; max-width: 85%; line-height: 1.4; }
-    .user-msg { background: #007aff; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
-    .ai-msg { background: #e5e5ea; color: black; align-self: flex-start; border-bottom-left-radius: 4px; }
+    /* Чат */
+    #chat-box { flex: 1; overflow-y: auto; background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; border: 1px solid #e5e5ea; display: flex; flex-direction: column; gap: 12px;}
+    .message-container { display: flex; flex-direction: column; max-width: 85%; }
+    .user-container { align-self: flex-end; align-items: flex-end; }
+    .ai-container { align-self: flex-start; align-items: flex-start; }
     
-    /* Елементи керування */
+    .message { padding: 12px; border-radius: 16px; line-height: 1.4; position: relative;}
+    .user-msg { background: #007aff; color: white; border-bottom-right-radius: 4px; }
+    .ai-msg { background: #e5e5ea; color: black; border-bottom-left-radius: 4px; }
+    
+    .play-audio-btn { background: none; border: none; font-size: 18px; padding: 5px; margin-top: 2px; cursor: pointer; color: #007aff; }
+    
+    /* Контроли чату */
     .controls { display: flex; gap: 8px; align-items: center; }
     .controls input { flex: 1; margin: 0; }
-    .mic-btn { background: #ff3b30; width: 48px; height: 48px; border-radius: 50%; margin: 0; display: flex; justify-content: center; align-items: center; font-size: 20px;}
+    .mic-btn, .send-btn { background: #1c1c1e; color: white; border: none; border-radius: 50%; width: 48px; height: 48px; display: flex; justify-content: center; align-items: center; margin: 0; font-size: 18px;}
+    .mic-btn { background: #ff3b30; }
     .mic-btn.recording { background: #cce5ff; border: 2px solid #ff3b30; }
+
+    /* Нижня панель навігації (Tabs) */
+    .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #ccc; display: none; justify-content: space-around; padding: 10px 0; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+    .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 12px; color: #8e8e93; cursor: pointer; }
+    .nav-item.active { color: #007aff; font-weight: bold; }
+    .nav-icon { font-size: 24px; margin-bottom: 2px; }
+
+    /* Картки для словника та домашки */
+    .card { background: white; padding: 15px; border-radius: 10px; border: 1px solid #e5e5ea; margin-bottom: 10px; }
+    .progress-bar-bg { background: #e5e5ea; border-radius: 10px; height: 20px; width: 100%; margin-top: 10px; overflow: hidden;}
+    .progress-bar-fill { background: #34c759; height: 100%; width: 0%; transition: width 0.5s; }
   </style>
 </head>
 <body>
 
-  <!-- Екран логіну -->
   <div id="login-screen" class="screen">
     <h1>AI English Coach</h1>
-    <p style="text-align:center; color:#666;">Введіть дані для входу</p>
-    <input type="text" id="username" placeholder="Username (як в таблиці)">
-    <input type="password" id="password" placeholder="Password">
-    <button onclick="login()">Увійти</button>
+    <p style="text-align:center; color:#666;">Твій план до 10 серпня</p>
+    <input type="text" id="username" placeholder="Логін">
+    <input type="password" id="password" placeholder="Пароль">
+    <button class="primary" onclick="login()">Увійти</button>
     <p id="login-error" style="color: red; text-align: center; font-weight: bold;"></p>
   </div>
 
-  <!-- Екран чату -->
   <div id="chat-screen" class="screen">
-    <h2 style="margin-top:0; text-align:center;">Coach 🇩🇰</h2>
+    <h2 style="margin-top:0;">Coach 🇩🇰</h2>
     <div id="chat-box"></div>
     <div class="controls">
       <button id="mic-btn" class="mic-btn" onclick="startDictation()">🎤</button>
-      <input type="text" id="user-input" placeholder="Напишіть щось..." onkeypress="if(event.key === 'Enter') sendMessage()">
-      <button onclick="sendMessage()" style="margin:0; padding: 0 15px;">➤</button>
+      <input type="text" id="user-input" placeholder="Type here or speak..." onkeypress="if(event.key === 'Enter') sendMessage()">
+      <button class="send-btn" onclick="sendMessage()">➤</button>
     </div>
   </div>
 
+  <div id="vocab-screen" class="screen">
+    <h2 style="margin-top:0;">Vocabulary 📚</h2>
+    <p style="color:#666; font-size: 14px;">Слова, які AI визначив як нові або складні для тебе.</p>
+    <div id="vocab-list">
+      <div class="card"><b>Hygge</b> (noun) - відчуття затишку та комфорту.<br><i>We need more hygge on this trip.</i></div>
+    </div>
+  </div>
+
+  <div id="hw-screen" class="screen">
+    <h2 style="margin-top:0;">Homework 📝</h2>
+    <p style="color:#666; font-size: 14px;">Завдання для закріплення матеріалу.</p>
+    <div id="hw-list">
+      <div class="card">
+        <b>Завдання 1:</b> Напиши 3 речення в Past Simple про те, що ти робила вчора.
+      </div>
+    </div>
+  </div>
+
+  <div id="progress-screen" class="screen">
+    <h2 style="margin-top:0;">Progress 📈</h2>
+    <div class="card">
+      <b>Мета:</b> 10 Серпня
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="main-progress"></div></div>
+      <p style="text-align: right; font-size: 12px; margin: 5px 0 0 0;">0% (День 1 з 80)</p>
+    </div>
+    <div class="card">
+      <b>Поточна тема:</b> Present Perfect vs Past Simple<br>
+      <b>Вивчено слів:</b> 0
+    </div>
+  </div>
+
+  <div id="bottom-nav" class="bottom-nav">
+    <div class="nav-item active" onclick="switchTab('chat')"><div class="nav-icon">💬</div>Чат</div>
+    <div class="nav-item" onclick="switchTab('vocab')"><div class="nav-icon">📚</div>Слова</div>
+    <div class="nav-item" onclick="switchTab('hw')"><div class="nav-icon">📝</div>Домашка</div>
+    <div class="nav-item" onclick="switchTab('progress')"><div class="nav-icon">📈</div>Прогрес</div>
+  </div>
+
   <script>
-    // СЮДИ ВСТАВ СВІЙ URL ВІД GOOGLE APPS SCRIPT
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx3buWZzKZ4cEmhUKXZltP_NrE_nSkYSbZLZ1pDTSvbbmSUAaQ3NCjmGBw56SWY8YJDAA/exec';
     let currentUser = '';
 
-    // Функція логіну
+    // Навігація між вкладками
+    function switchTab(tabName) {
+      document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      
+      document.getElementById(tabName + '-screen').style.display = 'flex';
+      event.currentTarget.classList.add('active');
+    }
+
     async function login() {
       const u = document.getElementById('username').value.trim();
       const p = document.getElementById('password').value.trim();
@@ -70,36 +131,36 @@
       try {
         const res = await fetch(SCRIPT_URL, {
           method: 'POST',
-          // Використовуємо text/plain, щоб уникнути блокування CORS
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ action: 'login', username: u, password: p }),
           redirect: 'follow'
         });
-        
         const data = await res.json();
 
         if (data.success) {
           currentUser = u;
           document.getElementById('login-screen').style.display = 'none';
           document.getElementById('chat-screen').style.display = 'flex';
-          addMessage('AI', "Hello! Ready to conquer Copenhagen and understand every word from The Neighbourhood? Let's practice!");
+          document.getElementById('bottom-nav').style.display = 'flex'; // Показуємо меню
+          addMessage('AI', "Hi! I am your personal coach. We have a plan until August 10th. Let's start with a quick assessment. Tell me about your day!");
+          
+          // Анімуємо прогрес-бар (поки як демо)
+          setTimeout(() => { document.getElementById('main-progress').style.width = '2%'; }, 500);
         } else {
           errorMsg.innerText = data.error;
         }
       } catch (e) {
-        errorMsg.innerText = 'Помилка з\'єднання. Перевір консоль.';
-        console.error(e);
+        errorMsg.innerText = 'Помилка з\'єднання.';
       }
     }
 
-    // Функція відправки повідомлення
     async function sendMessage() {
       const input = document.getElementById('user-input');
       const msg = input.value.trim();
       if (!msg) return;
 
       addMessage('User', msg);
-      input.value = ''; // очищаємо поле
+      input.value = '';
 
       try {
         const res = await fetch(SCRIPT_URL, {
@@ -108,73 +169,73 @@
           body: JSON.stringify({ action: 'chat', username: currentUser, message: msg }),
           redirect: 'follow'
         });
-        
         const data = await res.json();
 
         if (data.success) {
           addMessage('AI', data.ai_response);
-          speak(data.ai_response); // Запускаємо озвучку
         } else {
-          addMessage('AI', 'System error: ' + data.error);
+          addMessage('AI', 'Error: ' + data.error);
         }
       } catch (e) {
         addMessage('AI', 'Network error.');
-        console.error(e);
       }
     }
 
-    // Додавання повідомлення в інтерфейс
     function addMessage(sender, text) {
       const box = document.getElementById('chat-box');
-      const div = document.createElement('div');
-      div.className = 'message ' + (sender === 'User' ? 'user-msg' : 'ai-msg');
-      div.innerText = text;
-      box.appendChild(div);
-      box.scrollTop = box.scrollHeight; // Скролимо донизу
+      
+      // Створюємо контейнер для повідомлення
+      const container = document.createElement('div');
+      container.className = 'message-container ' + (sender === 'User' ? 'user-container' : 'ai-container');
+      
+      // Створюємо бульбашку з текстом
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'message ' + (sender === 'User' ? 'user-msg' : 'ai-msg');
+      
+      // Рендеримо текст з підтримкою переносів рядків
+      msgDiv.innerHTML = text.replace(/\n/g, '<br>');
+      container.appendChild(msgDiv);
+
+      // Якщо це AI, додаємо кнопку озвучки під повідомленням
+      if (sender === 'AI') {
+        const audioBtn = document.createElement('button');
+        audioBtn.className = 'play-audio-btn';
+        audioBtn.innerHTML = '🔊 Озвучити';
+        // Очищаємо текст від зірочок для читання
+        const cleanText = text.replace(/\*/g, '').replace(/'/g, "\\'");
+        audioBtn.onclick = () => speak(cleanText);
+        container.appendChild(audioBtn);
+      }
+
+      box.appendChild(container);
+      box.scrollTop = box.scrollHeight;
     }
 
-    // Голосове введення (Web Speech API)
     function startDictation() {
       const micBtn = document.getElementById('mic-btn');
       if (window.SpeechRecognition || window.webkitSpeechRecognition) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
-        
-        recognition.lang = 'en-US'; // Мова розпізнавання
-        recognition.interimResults = false;
-
-        recognition.onstart = function() {
-          micBtn.classList.add('recording');
-        };
-
-        recognition.onresult = function(e) {
+        recognition.lang = 'en-US';
+        recognition.onstart = () => micBtn.classList.add('recording');
+        recognition.onresult = (e) => {
           document.getElementById('user-input').value = e.results[0][0].transcript;
           micBtn.classList.remove('recording');
         };
-
-        recognition.onerror = function(e) {
-          alert('Помилка мікрофона: ' + e.error);
-          micBtn.classList.remove('recording');
-        };
-        
-        recognition.onend = function() {
-          micBtn.classList.remove('recording');
-        }
-
+        recognition.onerror = () => micBtn.classList.remove('recording');
+        recognition.onend = () => micBtn.classList.remove('recording');
         recognition.start();
       } else {
-        alert('На жаль, ваш браузер не підтримує запис голосу.');
+        alert('Мікрофон не підтримується цим браузером.');
       }
     }
 
-    // Озвучування тексту (SpeechSynthesis)
     function speak(text) {
       if ('speechSynthesis' in window) {
-        // Очищаємо текст від Markdown-зірочок, щоб синтезатор не читав їх як "asterisk"
-        const cleanText = text.replace(/\*/g, ''); 
-        const utterance = new SpeechSynthesisUtterance(cleanText);
-        utterance.lang = 'en-GB'; // Британський або американський акцент (en-US)
-        utterance.rate = 0.95; // Трохи повільніше для навчання
+        window.speechSynthesis.cancel(); // Зупиняємо попередню озвучку, якщо є
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-GB';
+        utterance.rate = 0.95;
         window.speechSynthesis.speak(utterance);
       }
     }
