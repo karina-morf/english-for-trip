@@ -1,123 +1,268 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="utf-8" />
   <title>English AI Coach</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1.0,user-scalable=no,viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0612" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/feather-icons"></script>
+
   <style>
-    /* Оновлені стилі для додатка з меню */
-    body { font-family: -apple-system, sans-serif; background: #f4f4f9; margin: 0; display: flex; flex-direction: column; height: 100vh; color: #333;}
-    .screen { padding: 20px; display: none; flex-direction: column; height: 100%; box-sizing: border-box; padding-bottom: 70px; /* Місце для меню */ }
-    #login-screen { display: flex; padding-bottom: 20px;}
+    /* ФІРМОВІ КОЛЬОРИ З ТВОГО ДИЗАЙНУ */
+    :root {
+      --bg: #0a0612;
+      --surface: rgba(255,255,255,0.03);
+      --border: rgba(255,255,255,0.08);
+      --text: #ffffff;
+      --text-muted: #9999b0;
+      --accent: #ff6b81;
+      --accent-2: #c66dff;
+      --accent-3: #ff9f6b;
+      --glow: rgba(198, 109, 255, 0.45);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0; padding: 0;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+      display: flex; flex-direction: column; height: 100vh;
+    }
+
+    /* ФОНОВЕ СВІТІННЯ */
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background:
+        radial-gradient(ellipse 600px 600px at 80% 10%, rgba(255,107,129,0.12), transparent 60%),
+        radial-gradient(ellipse 500px 500px at 10% 50%, rgba(198,109,255,0.1), transparent 60%);
+      pointer-events: none; z-index: -1;
+    }
+
+    .screen { 
+      padding: 24px; display: none; flex-direction: column; height: 100%; 
+      box-sizing: border-box; padding-bottom: 90px; /* Відступ для меню */
+      overflow-y: auto;
+    }
+
+    /* ТЕКСТИ */
+    h1, h2, h3 { margin: 0; font-weight: 800; letter-spacing: -0.02em; }
+    .page-title { font-size: 28px; margin-bottom: 24px; }
+    .page-title em { 
+      font-style: normal; 
+      background: linear-gradient(120deg, var(--accent), var(--accent-2));
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    }
     
-    h1, h2 { text-align: center; }
-    input, button { padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; outline: none; }
-    button.primary { background: #1c1c1e; color: white; border: none; cursor: pointer; font-weight: bold; width: 100%;}
-    button.primary:active { background: #3a3a3c; }
+    /* СКЛЯНА КАРТКА */
+    .gcard {
+      position: relative;
+      background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 20px; margin-bottom: 16px;
+      backdrop-filter: blur(10px);
+    }
+
+    /* КНОПКИ ТА ІНПУТИ */
+    input {
+      width: 100%; padding: 16px; margin-bottom: 16px;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); border-radius: 14px; font-size: 16px; outline: none;
+    }
+    input:focus { border-color: var(--accent); }
     
-    /* Чат */
-    #chat-box { flex: 1; overflow-y: auto; background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; border: 1px solid #e5e5ea; display: flex; flex-direction: column; gap: 12px;}
+    .btn-primary {
+      width: 100%; padding: 16px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #fff; font-weight: 700; font-size: 16px;
+      border: none; border-radius: 14px; cursor: pointer;
+      box-shadow: 0 6px 18px rgba(255,107,129,0.22);
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+
+    /* НИЖНЄ МЕНЮ */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; width: 100%;
+      background: rgba(10, 6, 18, 0.85); backdrop-filter: blur(15px);
+      border-top: 1px solid var(--border);
+      display: none; justify-content: space-around; 
+      padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+      z-index: 100;
+    }
+    .nav-item {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      font-size: 11px; color: var(--text-muted); cursor: pointer; font-weight: 600;
+    }
+    .nav-item.active { color: var(--accent); }
+    .nav-item i { width: 22px; height: 22px; transition: transform 0.3s; }
+    .nav-item.active i { transform: translateY(-2px); }
+
+    /* ЧАТ */
+    #chat-box { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px; padding-right: 5px;}
     .message-container { display: flex; flex-direction: column; max-width: 85%; }
     .user-container { align-self: flex-end; align-items: flex-end; }
     .ai-container { align-self: flex-start; align-items: flex-start; }
     
-    .message { padding: 12px; border-radius: 16px; line-height: 1.4; position: relative;}
-    .user-msg { background: #007aff; color: white; border-bottom-right-radius: 4px; }
-    .ai-msg { background: #e5e5ea; color: black; border-bottom-left-radius: 4px; }
+    .message { padding: 14px 18px; border-radius: 18px; line-height: 1.5; font-size: 15px;}
+    .user-msg { 
+      background: linear-gradient(135deg, var(--accent), var(--accent-2)); 
+      border-bottom-right-radius: 4px; 
+    }
+    .ai-msg { 
+      background: var(--surface); border: 1px solid var(--border);
+      border-bottom-left-radius: 4px; 
+    }
     
-    .play-audio-btn { background: none; border: none; font-size: 18px; padding: 5px; margin-top: 2px; cursor: pointer; color: #007aff; }
-    
-    /* Контроли чату */
-    .controls { display: flex; gap: 8px; align-items: center; }
-    .controls input { flex: 1; margin: 0; }
-    .mic-btn, .send-btn { background: #1c1c1e; color: white; border: none; border-radius: 50%; width: 48px; height: 48px; display: flex; justify-content: center; align-items: center; margin: 0; font-size: 18px;}
-    .mic-btn { background: #ff3b30; }
-    .mic-btn.recording { background: #cce5ff; border: 2px solid #ff3b30; }
+    .play-audio-btn { 
+      background: transparent; border: none; color: var(--text-muted); 
+      font-size: 12px; margin-top: 6px; cursor: pointer; 
+      display: flex; align-items: center; gap: 4px; padding: 0;
+    }
+    .play-audio-btn:hover { color: var(--accent); }
 
-    /* Нижня панель навігації (Tabs) */
-    .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; background: white; border-top: 1px solid #ccc; display: none; justify-content: space-around; padding: 10px 0; padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
-    .nav-item { display: flex; flex-direction: column; align-items: center; font-size: 12px; color: #8e8e93; cursor: pointer; }
-    .nav-item.active { color: #007aff; font-weight: bold; }
-    .nav-icon { font-size: 24px; margin-bottom: 2px; }
+    .controls { display: flex; gap: 10px; align-items: center; }
+    .controls input { margin: 0; flex: 1; border-radius: 100px; padding: 14px 20px;}
+    .circle-btn {
+      width: 50px; height: 50px; border-radius: 50%; border: none;
+      display: flex; justify-content: center; align-items: center; color: white; flex-shrink: 0;
+    }
+    .mic-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text-muted);}
+    .mic-btn.recording { background: rgba(255,107,129,0.2); border-color: var(--accent); color: var(--accent); animation: pulse 1.5s infinite; }
+    .send-btn { background: linear-gradient(135deg, var(--accent), var(--accent-2)); }
 
-    /* Картки для словника та домашки */
-    .card { background: white; padding: 15px; border-radius: 10px; border: 1px solid #e5e5ea; margin-bottom: 10px; }
-    .progress-bar-bg { background: #e5e5ea; border-radius: 10px; height: 20px; width: 100%; margin-top: 10px; overflow: hidden;}
-    .progress-bar-fill { background: #34c759; height: 100%; width: 0%; transition: width 0.5s; }
+    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(255,107,129,0.4); } 70% { box-shadow: 0 0 0 10px rgba(255,107,129,0); } 100% { box-shadow: 0 0 0 0 rgba(255,107,129,0); } }
+
+    /* КАРТА ПРОГРЕСУ (TIMELINE) */
+    .timeline { padding-left: 20px; position: relative; margin-top: 20px;}
+    .timeline::before {
+      content: ''; position: absolute; left: 4px; top: 8px; bottom: 8px; width: 2px;
+      background: linear-gradient(180deg, var(--accent), var(--surface), transparent);
+    }
+    .timeline-item { position: relative; margin-bottom: 24px; padding-left: 24px;}
+    .timeline-dot {
+      position: absolute; left: -21px; top: 4px; width: 12px; height: 12px;
+      border-radius: 50%; background: var(--bg); border: 2px solid var(--accent);
+      box-shadow: 0 0 10px var(--accent);
+    }
+    .timeline-dot.locked { border-color: var(--text-muted); box-shadow: none; }
+    .timeline-title { font-size: 16px; margin-bottom: 4px; }
+    .timeline-desc { font-size: 13px; color: var(--text-muted); margin: 0; }
   </style>
 </head>
 <body>
 
-  <div id="login-screen" class="screen">
-    <h1>AI English Coach</h1>
-    <p style="text-align:center; color:#666;">Твій план до 10 серпня</p>
-    <input type="text" id="username" placeholder="Логін">
-    <input type="password" id="password" placeholder="Пароль">
-    <button class="primary" onclick="login()">Увійти</button>
-    <p id="login-error" style="color: red; text-align: center; font-weight: bold;"></p>
-  </div>
-
-  <div id="chat-screen" class="screen">
-    <h2 style="margin-top:0;">Coach 🇩🇰</h2>
-    <div id="chat-box"></div>
-    <div class="controls">
-      <button id="mic-btn" class="mic-btn" onclick="startDictation()">🎤</button>
-      <input type="text" id="user-input" placeholder="Type here or speak..." onkeypress="if(event.key === 'Enter') sendMessage()">
-      <button class="send-btn" onclick="sendMessage()">➤</button>
+  <div id="login-screen" class="screen" style="display: flex; justify-content: center;">
+    <div style="text-align: center; margin-bottom: 40px;">
+      <h1 style="font-size: 36px;">English<br><em>AI Coach</em></h1>
+      <p style="color: var(--text-muted); font-size: 14px;">Твій шлях до Копенгагена</p>
     </div>
-  </div>
-
-  <div id="vocab-screen" class="screen">
-    <h2 style="margin-top:0;">Vocabulary 📚</h2>
-    <p style="color:#666; font-size: 14px;">Слова, які AI визначив як нові або складні для тебе.</p>
-    <div id="vocab-list">
-      <div class="card"><b>Hygge</b> (noun) - відчуття затишку та комфорту.<br><i>We need more hygge on this trip.</i></div>
-    </div>
-  </div>
-
-  <div id="hw-screen" class="screen">
-    <h2 style="margin-top:0;">Homework 📝</h2>
-    <p style="color:#666; font-size: 14px;">Завдання для закріплення матеріалу.</p>
-    <div id="hw-list">
-      <div class="card">
-        <b>Завдання 1:</b> Напиши 3 речення в Past Simple про те, що ти робила вчора.
-      </div>
+    <div class="gcard">
+      <input type="text" id="username" placeholder="Твій логін">
+      <input type="password" id="password" placeholder="Пароль">
+      <button class="btn-primary" onclick="login()">Увійти <i data-feather="log-in"></i></button>
+      <p id="login-error" style="color: var(--accent); text-align: center; font-size: 13px; margin-top: 15px;"></p>
     </div>
   </div>
 
   <div id="progress-screen" class="screen">
-    <h2 style="margin-top:0;">Progress 📈</h2>
-    <div class="card">
-      <b>Мета:</b> 10 Серпня
-      <div class="progress-bar-bg"><div class="progress-bar-fill" id="main-progress"></div></div>
-      <p style="text-align: right; font-size: 12px; margin: 5px 0 0 0;">0% (День 1 з 80)</p>
+    <h2 class="page-title">Твій <em>План</em></h2>
+    
+    <div class="gcard" style="display: flex; gap: 15px; align-items: center;">
+      <div style="background: rgba(198,109,255,0.15); padding: 15px; border-radius: 16px; color: var(--accent-2);">
+        <i data-feather="calendar"></i>
+      </div>
+      <div>
+        <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Дедлайн</div>
+        <div style="font-size: 18px; font-weight: 700;">10 Серпня</div>
+      </div>
     </div>
-    <div class="card">
-      <b>Поточна тема:</b> Present Perfect vs Past Simple<br>
-      <b>Вивчено слів:</b> 0
+
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <h3 class="timeline-title">Базові фрази (В процесі)</h3>
+        <p class="timeline-desc">Аеропорт, знайомство, замовлення кави.</p>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot locked"></div>
+        <h3 class="timeline-title" style="color: var(--text-muted);">Навігація містом</h3>
+        <p class="timeline-desc">Як знайти готель та запитати дорогу.</p>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot locked"></div>
+        <h3 class="timeline-title" style="color: var(--text-muted);">Small Talk</h3>
+        <p class="timeline-desc">Розмови з місцевими жителями (Hygge).</p>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot locked"></div>
+        <h3 class="timeline-title" style="color: var(--text-muted);">Концерт The Neighbourhood</h3>
+        <p class="timeline-desc">Обговорення музики, купівля мерчу.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="chat-screen" class="screen">
+    <h2 class="page-title">Mentor <em>AI</em></h2>
+    <div id="chat-box"></div>
+    <div class="controls">
+      <button id="mic-btn" class="circle-btn mic-btn" onclick="startDictation()"><i data-feather="mic"></i></button>
+      <input type="text" id="user-input" placeholder="Type or speak..." onkeypress="if(event.key === 'Enter') sendMessage()">
+      <button class="circle-btn send-btn" onclick="sendMessage()"><i data-feather="send"></i></button>
+    </div>
+  </div>
+
+  <div id="vocab-screen" class="screen">
+    <h2 class="page-title">Словник <em>Слів</em></h2>
+    <div id="vocab-list">
+      <div class="gcard" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h3 style="font-size: 18px;">Passport</h3>
+          <p style="margin: 4px 0 0; font-size: 13px; color: var(--text-muted);">Паспорт</p>
+        </div>
+        <i data-feather="volume-2" style="color: var(--accent); cursor: pointer;" onclick="speak('Passport')"></i>
+      </div>
+    </div>
+  </div>
+
+  <div id="hw-screen" class="screen">
+    <h2 class="page-title">Твої <em>Завдання</em></h2>
+    <div id="hw-list">
+      <div class="gcard">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+          <i data-feather="edit-3" style="color: var(--accent-3); width: 18px;"></i>
+          <span style="font-size: 12px; color: var(--accent-3); font-weight: 700; text-transform: uppercase;">Нове завдання</span>
+        </div>
+        <p style="margin: 0; font-size: 14px; line-height: 1.5;">Напиши 3 речення про те, чому ти любиш The Neighbourhood, використовуючи словник.</p>
+      </div>
     </div>
   </div>
 
   <div id="bottom-nav" class="bottom-nav">
-    <div class="nav-item active" onclick="switchTab('chat')"><div class="nav-icon">💬</div>Чат</div>
-    <div class="nav-item" onclick="switchTab('vocab')"><div class="nav-icon">📚</div>Слова</div>
-    <div class="nav-item" onclick="switchTab('hw')"><div class="nav-icon">📝</div>Домашка</div>
-    <div class="nav-item" onclick="switchTab('progress')"><div class="nav-icon">📈</div>Прогрес</div>
+    <div class="nav-item active" onclick="switchTab('progress', this)"><i data-feather="map"></i>План</div>
+    <div class="nav-item" onclick="switchTab('chat', this)"><i data-feather="message-circle"></i>Чат</div>
+    <div class="nav-item" onclick="switchTab('vocab', this)"><i data-feather="book"></i>Слова</div>
+    <div class="nav-item" onclick="switchTab('hw', this)"><i data-feather="check-square"></i>Завдання</div>
   </div>
 
   <script>
+    feather.replace(); // Ініціалізація іконок при завантаженні
+
+    // СЮДИ ВСТАВ СВІЙ URL ВІД GOOGLE APPS SCRIPT
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx3buWZzKZ4cEmhUKXZltP_NrE_nSkYSbZLZ1pDTSvbbmSUAaQ3NCjmGBw56SWY8YJDAA/exec';
     let currentUser = '';
 
-    // Навігація між вкладками
-    function switchTab(tabName) {
+    function switchTab(tabName, element) {
       document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
       
       document.getElementById(tabName + '-screen').style.display = 'flex';
-      event.currentTarget.classList.add('active');
+      element.classList.add('active');
     }
 
     async function login() {
@@ -126,7 +271,8 @@
       const errorMsg = document.getElementById('login-error');
       
       if (!u || !p) { errorMsg.innerText = 'Заповніть всі поля'; return; }
-      errorMsg.innerText = 'Перевірка...';
+      errorMsg.innerHTML = '<i data-feather="loader" style="animation: spin 1s linear infinite;"></i> Перевірка...';
+      feather.replace();
 
       try {
         const res = await fetch(SCRIPT_URL, {
@@ -140,12 +286,13 @@
         if (data.success) {
           currentUser = u;
           document.getElementById('login-screen').style.display = 'none';
-          document.getElementById('chat-screen').style.display = 'flex';
-          document.getElementById('bottom-nav').style.display = 'flex'; // Показуємо меню
-          addMessage('AI', "Hi! I am your personal coach. We have a plan until August 10th. Let's start with a quick assessment. Tell me about your day!");
           
-          // Анімуємо прогрес-бар (поки як демо)
-          setTimeout(() => { document.getElementById('main-progress').style.width = '2%'; }, 500);
+          // ТЕПЕР ПІСЛЯ ЛОГІНУ ВІДКРИВАЄТЬСЯ ПРОГРЕС
+          document.getElementById('progress-screen').style.display = 'flex';
+          document.getElementById('bottom-nav').style.display = 'flex'; 
+          
+          // Додаємо перше привітання в чат непомітно
+          addMessage('AI', "Hello! I am your mentor. We have a plan until August 10th. Go to the Chat tab when you're ready to practice!");
         } else {
           errorMsg.innerText = data.error;
         }
@@ -183,32 +330,27 @@
 
     function addMessage(sender, text) {
       const box = document.getElementById('chat-box');
-      
-      // Створюємо контейнер для повідомлення
       const container = document.createElement('div');
       container.className = 'message-container ' + (sender === 'User' ? 'user-container' : 'ai-container');
       
-      // Створюємо бульбашку з текстом
       const msgDiv = document.createElement('div');
       msgDiv.className = 'message ' + (sender === 'User' ? 'user-msg' : 'ai-msg');
-      
-      // Рендеримо текст з підтримкою переносів рядків
       msgDiv.innerHTML = text.replace(/\n/g, '<br>');
       container.appendChild(msgDiv);
 
-      // Якщо це AI, додаємо кнопку озвучки під повідомленням
       if (sender === 'AI') {
         const audioBtn = document.createElement('button');
         audioBtn.className = 'play-audio-btn';
-        audioBtn.innerHTML = '🔊 Озвучити';
-        // Очищаємо текст від зірочок для читання
+        // Замість емодзі використовуємо іконку Feather
+        audioBtn.innerHTML = '<i data-feather="volume-2" style="width:14px; height:14px;"></i> Listen';
         const cleanText = text.replace(/\*/g, '').replace(/'/g, "\\'");
         audioBtn.onclick = () => speak(cleanText);
         container.appendChild(audioBtn);
       }
 
       box.appendChild(container);
-      box.scrollTop = box.scrollHeight;
+      feather.replace(); // Оновлюємо іконки в новому повідомленні
+      setTimeout(() => box.scrollTop = box.scrollHeight, 50);
     }
 
     function startDictation() {
@@ -232,7 +374,7 @@
 
     function speak(text) {
       if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // Зупиняємо попередню озвучку, якщо є
+        window.speechSynthesis.cancel(); 
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = 'en-GB';
         utterance.rate = 0.95;
