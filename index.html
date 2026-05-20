@@ -330,9 +330,9 @@
     function setStatus(text) { document.getElementById('voice-status').innerText = text; }
     function setSubtitle(text) { document.getElementById('voice-subtitle').innerText = text; }
 
-    // --- НОВА ФУНКЦІЯ ОЗВУЧКИ ЧЕРЕЗ ELEVENLABS ---
+    // --- НОВА ФУНКЦІЯ ОЗВУЧКИ ЧЕРЕЗ ELEVENLABS (З перевіркою помилок) ---
     async function speakElevenLabs(text) {
-      if (!ELEVENLABS_API_KEY || ELEVENLABS_API_KEY.includes('ТВІЙ_КЛЮЧ')) {
+      if (!ELEVENLABS_API_KEY || ELEVENLABS_API_KEY.includes('sk_e7acf289af530901b79910d0baf5e4ae193457424b0d8167)) {
         alert("Упс! Ти забула вставити ключ ElevenLabs у код (рядок 242)!"); 
         return;
       }
@@ -350,12 +350,16 @@
           },
           body: JSON.stringify({
             text: cleanText,
-            model_id: "eleven_turbo_v2_5", // Найшвидша модель
+            model_id: "eleven_multilingual_v2", // Змінили на стабільну модель для нових акаунтів
             voice_settings: { stability: 0.5, similarity_boost: 0.75 }
           })
         });
 
-        if (!response.ok) throw new Error("Помилка ElevenLabs");
+        // Якщо ElevenLabs видає помилку, ми її перехопимо і покажемо!
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new Error(errText);
+        }
 
         const blob = await response.blob();
         const audio = new Audio(URL.createObjectURL(blob));
@@ -364,10 +368,16 @@
           setStatus("Твоя черга. Тисни мікрофон.");
         };
 
-        audio.play();
+        // Запускаємо аудіо. Якщо браузер блокує звук - покажемо попередження
+        audio.play().catch(e => {
+          alert("Браузер заблокував звук! Перевір, чи телефон не в беззвучному режимі, або чи дозволено автовідтворення.");
+          setStatus("Твоя черга. Тисни мікрофон.");
+        });
+
       } catch (e) {
         console.error(e);
         setStatus("Не вдалося озвучити.");
+        alert("Помилка ElevenLabs: " + e.message); // Виведемо точну помилку на екран
       }
     }
 
