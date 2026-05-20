@@ -210,12 +210,10 @@
   <script>
     feather.replace();
 
-    // === ТВОЇ КЛЮЧІ ТА ПОСИЛАННЯ ===
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx3buWZzKZ4cEmhUKXZltP_NrE_nSkYSbZLZ1pDTSvbbmSUAaQ3NCjmGBw56SWY8YJDAA/exec';
     
-    // ВСТАВ СВІЙ КЛЮЧ ELEVENLABS МІЖ ЛАПКАМИ НИЖЧЕ:
     const ELEVENLABS_API_KEY = 'sk_e7acf289af530901b79910d0baf5e4ae193457424b0d8167'; 
-    const VOICE_ID = '21m00Tcm4TlvDq8ikWAM'; // Голос Rachel (приємний американський акцент)
+    const VOICE_ID = '21m00Tcm4TlvDq8ikWAM'; 
     
     let currentUser = '';
 
@@ -260,8 +258,6 @@
       }
     }
 
-    // --- ЛОГІКА ГОЛОСОВОЇ СЕСІЇ ---
-
     async function startSession() {
       document.getElementById('start-btn-container').style.display = 'none';
       document.getElementById('voice-controls').style.display = 'flex';
@@ -269,7 +265,6 @@
       setStatus("Дзвонимо...");
       setSubtitle("...");
 
-      // Новий промпт для старту (Як друг)
       await sendToAI("Hey! We are at the airport getting ready for Copenhagen. Keep it super casual and short. Ask me a question.");
     }
 
@@ -292,7 +287,7 @@
           const transcript = e.results[0][0].transcript;
           micBtn.classList.remove('recording');
           setSubtitle(`Ти: "${transcript}"`);
-          sendToAI(transcript); // Відправляємо розпізнаний голос
+          sendToAI(transcript); 
         };
         
         recognition.onerror = () => { micBtn.classList.remove('recording'); setStatus("Помилка мікрофона"); };
@@ -317,7 +312,7 @@
 
         if (data.success) {
           setSubtitle(`"${data.ai_response}"`);
-          await speakElevenLabs(data.ai_response); // Викликаємо новий живий голос!
+          await speakElevenLabs(data.ai_response); 
         } else {
           setStatus("Помилка");
           setSubtitle(data.error);
@@ -330,10 +325,9 @@
     function setStatus(text) { document.getElementById('voice-status').innerText = text; }
     function setSubtitle(text) { document.getElementById('voice-subtitle').innerText = text; }
 
-    // --- НОВА ФУНКЦІЯ ОЗВУЧКИ ЧЕРЕЗ ELEVENLABS (З перевіркою помилок) ---
     async function speakElevenLabs(text) {
-      if (!ELEVENLABS_API_KEY || ELEVENLABS_API_KEY.includes('sk_e7acf289af530901b79910d0baf5e4ae193457424b0d8167)) {
-        alert("Упс! Ти забула вставити ключ ElevenLabs у код (рядок 242)!"); 
+      if (!ELEVENLABS_API_KEY || ELEVENLABS_API_KEY === '') {
+        alert("Упс! Відсутній ключ ElevenLabs у коді!"); 
         return;
       }
 
@@ -350,12 +344,11 @@
           },
           body: JSON.stringify({
             text: cleanText,
-            model_id: "eleven_multilingual_v2", // Змінили на стабільну модель для нових акаунтів
+            model_id: "eleven_multilingual_v2", 
             voice_settings: { stability: 0.5, similarity_boost: 0.75 }
           })
         });
 
-        // Якщо ElevenLabs видає помилку, ми її перехопимо і покажемо!
         if (!response.ok) {
           const errText = await response.text();
           throw new Error(errText);
@@ -368,7 +361,6 @@
           setStatus("Твоя черга. Тисни мікрофон.");
         };
 
-        // Запускаємо аудіо. Якщо браузер блокує звук - покажемо попередження
         audio.play().catch(e => {
           alert("Браузер заблокував звук! Перевір, чи телефон не в беззвучному режимі, або чи дозволено автовідтворення.");
           setStatus("Твоя черга. Тисни мікрофон.");
@@ -377,11 +369,9 @@
       } catch (e) {
         console.error(e);
         setStatus("Не вдалося озвучити.");
-        alert("Помилка ElevenLabs: " + e.message); // Виведемо точну помилку на екран
+        alert("Помилка ElevenLabs: " + e.message); 
       }
     }
-
-    // --- РЕНДЕР ДАНИХ (Слова та Домашка) ---
 
     function renderVocab(vocabArray) {
       const list = document.getElementById('vocab-list');
@@ -395,7 +385,6 @@
         card.className = 'gcard';
         card.style = 'display: flex; justify-content: space-between; align-items: center;';
         
-        // Тепер слова у словнику теж озвучуються крутим голосом ElevenLabs!
         card.innerHTML = `
           <div><h3 style="font-size: 18px;">${item.Word}</h3><p style="margin: 4px 0 0; font-size: 13px; color: var(--text-muted);">${item.Translation}</p></div>
           <button class="circle-btn" style="width: 40px; height: 40px; background: rgba(255,107,129,0.1); border: 1px solid var(--border); color: var(--accent);" onclick="speakElevenLabs('${item.Word.replace(/'/g, "\\'")}')">
