@@ -210,8 +210,13 @@
   <script>
     feather.replace();
 
-    // СЮДИ ВСТАВ СВІЙ URL ВІД GOOGLE APPS SCRIPT
+    // === ТВОЇ КЛЮЧІ ТА ПОСИЛАННЯ ===
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx3buWZzKZ4cEmhUKXZltP_NrE_nSkYSbZLZ1pDTSvbbmSUAaQ3NCjmGBw56SWY8YJDAA/exec';
+    
+    // ВСТАВ СВІЙ КЛЮЧ ELEVENLABS МІЖ ЛАПКАМИ НИЖЧЕ:
+    const ELEVENLABS_API_KEY = 'sk_e7acf289af530901b79910d0baf5e4ae193457424b0d8167'; 
+    const VOICE_ID = '21m00Tcm4TlvDq8ikWAM'; // Голос Rachel (приємний американський акцент)
+    
     let currentUser = '';
 
     function switchTab(tabName, element) {
@@ -261,11 +266,11 @@
       document.getElementById('start-btn-container').style.display = 'none';
       document.getElementById('voice-controls').style.display = 'flex';
       
-      setStatus("Coach is thinking...");
+      setStatus("Дзвонимо...");
       setSubtitle("...");
 
-      // Надсилаємо секретне повідомлення, щоб ШІ почав діалог першим
-      await sendToAI("Привіт! Починаємо наше заняття. Привітайся коротко, нагадай, яка у нас тема, і задай мені перше питання англійською.");
+      // Новий промпт для старту (Як друг)
+      await sendToAI("Hey! We are at the airport getting ready for Copenhagen. Keep it super casual and short. Ask me a question.");
     }
 
     function startDictation() {
@@ -279,19 +284,18 @@
         
         recognition.onstart = () => {
           micBtn.classList.add('recording');
-          window.speechSynthesis.cancel(); // Зупиняємо ШІ, якщо він ще говорить
-          setStatus("Listening to you...");
-          setSubtitle("Говоріть...");
+          setStatus("Слухаю тебе...");
+          setSubtitle("Говори...");
         };
         
         recognition.onresult = (e) => {
           const transcript = e.results[0][0].transcript;
           micBtn.classList.remove('recording');
-          setSubtitle(`Ви: "${transcript}"`);
+          setSubtitle(`Ти: "${transcript}"`);
           sendToAI(transcript); // Відправляємо розпізнаний голос
         };
         
-        recognition.onerror = () => { micBtn.classList.remove('recording'); setStatus("Microphone Error"); };
+        recognition.onerror = () => { micBtn.classList.remove('recording'); setStatus("Помилка мікрофона"); };
         recognition.onend = () => { micBtn.classList.remove('recording'); };
         
         recognition.start();
@@ -301,7 +305,7 @@
     }
 
     async function sendToAI(text) {
-      setStatus("Coach is thinking...");
+      setStatus("Друг думає...");
       try {
         const res = await fetch(SCRIPT_URL, {
           method: 'POST',
@@ -312,33 +316,58 @@
         const data = await res.json();
 
         if (data.success) {
-          setStatus("Coach is speaking");
           setSubtitle(`"${data.ai_response}"`);
-          speak(data.ai_response);
+          await speakElevenLabs(data.ai_response); // Викликаємо новий живий голос!
         } else {
-          setStatus("Error");
+          setStatus("Помилка");
           setSubtitle(data.error);
         }
       } catch (e) {
-        setStatus("Network Error");
+        setStatus("Помилка мережі");
       }
     }
 
     function setStatus(text) { document.getElementById('voice-status').innerText = text; }
     function setSubtitle(text) { document.getElementById('voice-subtitle').innerText = text; }
 
-    function speak(text) {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); 
-        const cleanText = text.replace(/\*/g, ''); // Забираємо зірочки
-        const utterance = new SpeechSynthesisUtterance(cleanText);
-        utterance.lang = 'en-GB';
-        utterance.rate = 0.95;
-        
-        // Коли ШІ закінчує говорити
-        utterance.onend = () => { setStatus("Your turn"); };
-        
-        window.speechSynthesis.speak(utterance);
+    // --- НОВА ФУНКЦІЯ ОЗВУЧКИ ЧЕРЕЗ ELEVENLABS ---
+    async function speakElevenLabs(text) {
+      if (!ELEVENLABS_API_KEY || ELEVENLABS_API_KEY.includes('ТВІЙ_КЛЮЧ')) {
+        alert("Упс! Ти забула вставити ключ ElevenLabs у код (рядок 242)!"); 
+        return;
+      }
+
+      setStatus("Друг говорить...");
+      const cleanText = text.replace(/\*/g, ''); 
+
+      try {
+        const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`, {
+          method: 'POST',
+          headers: {
+            'Accept': 'audio/mpeg',
+            'xi-api-key': ELEVENLABS_API_KEY,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            text: cleanText,
+            model_id: "eleven_turbo_v2_5", // Найшвидша модель
+            voice_settings: { stability: 0.5, similarity_boost: 0.75 }
+          })
+        });
+
+        if (!response.ok) throw new Error("Помилка ElevenLabs");
+
+        const blob = await response.blob();
+        const audio = new Audio(URL.createObjectURL(blob));
+
+        audio.onended = () => {
+          setStatus("Твоя черга. Тисни мікрофон.");
+        };
+
+        audio.play();
+      } catch (e) {
+        console.error(e);
+        setStatus("Не вдалося озвучити.");
       }
     }
 
@@ -355,9 +384,11 @@
         const card = document.createElement('div');
         card.className = 'gcard';
         card.style = 'display: flex; justify-content: space-between; align-items: center;';
+        
+        // Тепер слова у словнику теж озвучуються крутим голосом ElevenLabs!
         card.innerHTML = `
           <div><h3 style="font-size: 18px;">${item.Word}</h3><p style="margin: 4px 0 0; font-size: 13px; color: var(--text-muted);">${item.Translation}</p></div>
-          <button class="circle-btn" style="width: 40px; height: 40px; background: rgba(255,107,129,0.1); border: 1px solid var(--border); color: var(--accent);" onclick="speak('${item.Word.replace(/'/g, "\\'")}')">
+          <button class="circle-btn" style="width: 40px; height: 40px; background: rgba(255,107,129,0.1); border: 1px solid var(--border); color: var(--accent);" onclick="speakElevenLabs('${item.Word.replace(/'/g, "\\'")}')">
             <i data-feather="volume-2" style="width: 18px; height: 18px;"></i>
           </button>
         `;
